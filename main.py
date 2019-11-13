@@ -28,7 +28,7 @@ class MyApp(ShowBase):
         self.taskMgr.add(self.moveTask, "MoveTask")
 
         self.loadMap()
-        self.cameraMode=True
+        self.cameraMode=1
 
         self.pacman = loader.loadModel(Filename.fromOsSpecific("models/pacman.bam"))
         self.pacman.setPos(self.position[0],self.position[1],self.position[2])
@@ -68,17 +68,22 @@ class MyApp(ShowBase):
             self.rotation[0] = (self.rotation[0]+3)%360
         if is_down(KeyboardButton.right()):
             self.rotation[0] = (self.rotation[0]-3)%360
-        if is_down(KeyboardButton.asciiKey('o')):
-            self.cameraMode= False
-        if is_down(KeyboardButton.asciiKey('i')):
-            self.cameraMode= True
+        if is_down(KeyboardButton.asciiKey('1')):
+            self.cameraMode= 1
+        if is_down(KeyboardButton.asciiKey('2')):
+            self.cameraMode= 2
+        if is_down(KeyboardButton.asciiKey('3')):
+            self.cameraMode= 3
 
         self.pacman.setPos(self.position[0],self.position[1],self.position[2])
         self.pacman.setHpr(self.rotation[0],self.rotation[1],self.rotation[2])
-        if(self.cameraMode):
+        if self.cameraMode==1:
             self.camera.setPos(self.position[0],self.position[1],self.position[2])
             self.camera.setHpr(self.rotation[0],self.rotation[1],self.rotation[2])
-        else:
+        elif self.cameraMode==2:
+            self.camera.setPos(self.position[0],self.position[1]-30,self.position[2]+45)
+            self.camera.setHpr(0,-60,0)
+        elif self.cameraMode==3:
             self.camera.setPos(0,0,180)
             self.camera.setHpr(0,-90,0)
         return Task.cont
@@ -107,7 +112,7 @@ class MyApp(ShowBase):
                         self.walls.append([x,y])
                     elif element == '1':
                         m = loader.loadModel(Filename.fromOsSpecific("models/coin.bam"))
-                        m.setPos(x,y,0.3)
+                        m.setPos(x,y,1)
                         m.setScale(3,3,3)
                         m.reparentTo(self.render)
                         self.coins.append([x,y])
@@ -115,13 +120,13 @@ class MyApp(ShowBase):
                         self.passages.append([x,y])
                     elif element == '3':
                         m = loader.loadModel(Filename.fromOsSpecific("models/scare.bam"))
-                        m.setPos(x,y,0.3)
+                        m.setPos(x,y,1)
                         m.setScale(3,3,3)
                         m.reparentTo(self.render)
                         self.scares.append([x,y])
                     elif element == '4':
                         m = loader.loadModel(Filename.fromOsSpecific("models/fruit.bam"))
-                        m.setPos(x,y,0.3)
+                        m.setPos(x,y,1)
                         m.setScale(3,3,3)
                         m.reparentTo(self.render)
                         self.fruits.append([x,y])
