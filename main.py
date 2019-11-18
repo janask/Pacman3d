@@ -7,67 +7,85 @@ from direct.task import Task
 from direct.actor.Actor import Actor
 from panda3d.core import KeyboardButton
 from panda3d.core import Filename
+from direct.gui.DirectGui import *
+
+from Pacman import Pacman
+from Map import Map
  
 class MyApp(ShowBase):
 
-    position = [0,6,1.5]
-    rotation = [0,0,0]
+    points = 0
+    level = 1
+    lives = 3
     
     def __init__(self):
         ShowBase.__init__(self)
+
+        #Load state bar
+        self.gameState = DirectFrame(frameSize=(-base.getAspectRatio(),base.getAspectRatio(),0.8,1),frameColor=(0,0,1,1))
+        self.pointsLabel = DirectLabel(frameColor=(0,0,0,0),text="Points: "+str(self.points), scale=(0.1,0.1,0.1), pos=(-base.getAspectRatio()*0.8,0,0.9))
+        self.levelLabel = DirectLabel(frameColor=(0,0,0,0),text="LEVEL "+str(self.level), scale=(0.1,0.1,0.1), pos=(0,0,0.9))
+        self.livesLabel = DirectLabel(frameColor=(0,0,0,0),text="Lives: "+str(self.lives), scale=(0.1,0.1,0.1), pos=(base.getAspectRatio()*0.8,0,0.9))
  
-        # Load the environment model.
+        #Load scene
         self.scene = self.loader.loadModel(Filename.fromOsSpecific("models/scene.bam"))
-        # Reparent the model to render.
         self.scene.reparentTo(self.render)
-        # Apply scale and position transforms on the model.
         self.scene.setScale(2.89,2.89,3)
         self.scene.setPos(0, 0, 1.5)
  
-        # Add the moveTask procedure to the task manager.
+        # Add tasks to the task manager.
         self.taskMgr.add(self.moveTask, "MoveTask")
+        self.accept("aspectRatioChanged", self.ratioChanged)
 
-        self.loadMap()
+        self.map = Map(self)
         self.cameraMode=1
 
-        self.pacman = loader.loadModel(Filename.fromOsSpecific("models/pacman.bam"))
-        self.pacman.setPos(self.position[0],self.position[1],self.position[2])
-        self.pacman.setScale(3,3,3)
-        self.pacman.reparentTo(self.render)
+        #Ghosts
+        g = loader.loadModel(Filename.fromOsSpecific("models/blinky.bam"))
+        g.setPos(24,6,1.5)
+        g.setScale(1.5,1.5,1.5)
+        g.reparentTo(self.render)
+        g = loader.loadModel(Filename.fromOsSpecific("models/pinky.bam"))
+        g.setPos(27,6,1.5)
+        g.setScale(1.5,1.5,1.5)
+        g.reparentTo(self.render)
+        g = loader.loadModel(Filename.fromOsSpecific("models/inky.bam"))
+        g.setPos(30,6,1.5)
+        g.setScale(1.5,1.5,1.5)
+        g.reparentTo(self.render)
+        g = loader.loadModel(Filename.fromOsSpecific("models/clyde.bam"))
+        g.setPos(33,6,1.5)
+        g.setScale(1.5,1.5,1.5)
+        g.reparentTo(self.render)
+        g = loader.loadModel(Filename.fromOsSpecific("models/scared.bam"))
+        g.setPos(36,6,1.5)
+        g.setScale(1.5,1.5,1.5)
+        g.reparentTo(self.render)
+
+        #Pacman
+        m = loader.loadModel(Filename.fromOsSpecific("models/pacman.bam"))
+        self.pacman = Pacman(m, self.map, self)
+        m.setPos(self.pacman.position[0],self.pacman.position[1],self.pacman.position[2])
+        m.setScale(3,3,3)
+        m.reparentTo(self.render)
+
+        self.timer = globalClock.getFrameTime()
         
     def moveTask(self, task):
      
-        # Check if the player is holding W or S
         is_down = base.mouseWatcherNode.is_button_down
+        dt = globalClock.getFrameTime()
+        dt = dt - self.timer
+        self.timer = dt + self.timer
      
         if is_down(KeyboardButton.up()):
-            move = [-0.2*sin(radians(self.rotation[0])),0.2*cos(radians(self.rotation[0]))]
-            for wall in self.walls:
-                if (abs(wall[1]-self.position[1]-move[1])<2.6) and (abs(wall[0]-self.position[0]-move[0])<2.6):
-                    if (round(abs(wall[1]-self.position[1]),1)<2.6 and sign(wall[0]-self.position[0])==sign(move[0])):
-                        move[0] = wall[0]-self.position[0]-2.6*sign(move[0])
-                    if (round(abs(wall[0]-self.position[0]),1)<2.6 and sign(wall[1]-self.position[1])==sign(move[1])):
-                        move[1] = wall[1]-self.position[1]-2.6*sign(move[1])
-            self.position[1] = self.position[1]+move[1]
-            self.position[0] = self.position[0]+move[0]
+            self.pacman.moveForward(dt)
         if is_down(KeyboardButton.down()):
-            move = [0.1*sin(radians(self.rotation[0])),-0.1*cos(radians(self.rotation[0]))]
-            for wall in self.walls:
-                if (abs(wall[1]-self.position[1]-move[1])<2.6) and (abs(wall[0]-self.position[0]-move[0])<2.6):
-                    if (round(abs(wall[1]-self.position[1]),1)<2.6):
-                        move[0] = wall[0]-self.position[0]-2.6*sign(move[0])
-                    if (round(abs(wall[0]-self.position[0]),1)<2.6):
-                        move[1] = wall[1]-self.position[1]-2.6*sign(move[1])
-                    if(round(abs(wall[1]-self.position[1]),1)>=2.6 and round(abs(wall[0]-self.position[0]),1)>=2.6):
-                        tmp = min(abs(move[0]-wall[0]+self.position[0]+2.6*sign(move[0])),abs(move[1]-wall[1]+self.position[1]+2.6*sign(move[1])))
-                        move[0] -= tmp*sign(move[0])
-                        move[1] -= tmp*sign(move[1])
-            self.position[1] = self.position[1]+move[1]
-            self.position[0] = self.position[0]+move[0]
+            self.pacman.moveBack(dt)
         if is_down(KeyboardButton.left()):
-            self.rotation[0] = (self.rotation[0]+3)%360
+            self.pacman.turnLeft(dt)
         if is_down(KeyboardButton.right()):
-            self.rotation[0] = (self.rotation[0]-3)%360
+            self.pacman.turnRight(dt)
         if is_down(KeyboardButton.asciiKey('1')):
             self.cameraMode= 1
         if is_down(KeyboardButton.asciiKey('2')):
@@ -75,67 +93,44 @@ class MyApp(ShowBase):
         if is_down(KeyboardButton.asciiKey('3')):
             self.cameraMode= 3
 
-        self.pacman.setPos(self.position[0],self.position[1],self.position[2])
-        self.pacman.setHpr(self.rotation[0],self.rotation[1],self.rotation[2])
+        self.pointsLabel.setText("Points: "+str(self.points))
+        
         if self.cameraMode==1:
-            self.camera.setPos(self.position[0],self.position[1],self.position[2])
-            self.camera.setHpr(self.rotation[0],self.rotation[1],self.rotation[2])
+            self.camera.setPos(self.pacman.position[0],self.pacman.position[1],self.pacman.position[2])
+            self.camera.setHpr(self.pacman.rotation[0],self.pacman.rotation[1],self.pacman.rotation[2])
         elif self.cameraMode==2:
-            self.camera.setPos(self.position[0],self.position[1]-30,self.position[2]+45)
+            self.camera.setPos(self.pacman.position[0],self.pacman.position[1]-30,self.pacman.position[2]+45)
             self.camera.setHpr(0,-60,0)
         elif self.cameraMode==3:
             self.camera.setPos(0,0,180)
             self.camera.setHpr(0,-90,0)
-        return Task.cont
 
-    def loadMap(self):
-        x=-45
-        y=-45
-        self.walls = []
-        self.coins = []
-        self.passages = []
-        self.doors = []
-        self.teleports = []
-        self.scares = []
-        self.ghosts = []
-        self.fruits = []
-        with open('map.txt', 'r') as mapFile:
-            for line in mapFile:
-                for element in line:
-                    if element == '\n':
-                        break
-                    if element == '0':
-                        m = loader.loadModel(Filename.fromOsSpecific("models/wall.bam"))
-                        m.setPos(x,y,0)
-                        m.setScale(3,3,3)
-                        m.reparentTo(self.render)
-                        self.walls.append([x,y])
-                    elif element == '1':
-                        m = loader.loadModel(Filename.fromOsSpecific("models/coin.bam"))
-                        m.setPos(x,y,1)
-                        m.setScale(3,3,3)
-                        m.reparentTo(self.render)
-                        self.coins.append([x,y])
-                    elif element == '2':
-                        self.passages.append([x,y])
-                    elif element == '3':
-                        m = loader.loadModel(Filename.fromOsSpecific("models/scare.bam"))
-                        m.setPos(x,y,1)
-                        m.setScale(3,3,3)
-                        m.reparentTo(self.render)
-                        self.scares.append([x,y])
-                    elif element == '4':
-                        m = loader.loadModel(Filename.fromOsSpecific("models/fruit.bam"))
-                        m.setPos(x,y,1)
-                        m.setScale(3,3,3)
-                        m.reparentTo(self.render)
-                        self.fruits.append([x,y])
-                    else:
-                        pass
-                    x += 3
-                x = -45
-                y += 3
-        print(self.walls)
+        if len(self.map.coins) + len(self.map.scares) == 0:
+            DirectLabel(frameColor=(0,1,0,1),text="VICTORY", scale=(0.5,0.5,0.5))
+            self.pacman.scareMode = False
+            return
+        return Task.cont
+    def ratioChanged(self):
+        if base.getAspectRatio() > 1:
+            self.gameState  = DirectFrame(frameSize=(-base.getAspectRatio(),base.getAspectRatio(),0.8,1),frameColor=(0,0,1,1))
+            self.pointsLabel = DirectLabel(frameColor=(0,0,0,0),text="Points: "+str(self.points), scale=(0.1,0.1,0.1), pos=(-base.getAspectRatio()*0.8,0,0.9))
+            self.levelLabel = DirectLabel(frameColor=(0,0,0,0),text="LEVEL "+str(self.level), scale=(0.1,0.1,0.1), pos=(0,0,0.9))
+            self.livesLabel = DirectLabel(frameColor=(0,0,0,0),text="Lives: "+str(self.lives), scale=(0.1,0.1,0.1), pos=(base.getAspectRatio()*0.8,0,0.9))
+        else:
+            self.gameState  = DirectFrame(frameSize=(-1,1,1/base.getAspectRatio()*0.8,1/base.getAspectRatio()),frameColor=(0,0,1,1))
+            self.pointsLabel = DirectLabel(frameColor=(0,0,0,0),text="Points: "+str(self.points), scale=(0.1,0.1,0.1), pos=(-0.8,0,0.9))
+            self.levelLabel = DirectLabel(frameColor=(0,0,0,0),text="LEVEL "+str(self.level), scale=(0.1,0.1,0.1), pos=(0,0,0.9))
+            self.livesLabel = DirectLabel(frameColor=(0,0,0,0),text="Lives: "+str(self.lives), scale=(0.1,0.1,0.1), pos=(0.8,0,0.9))
+    def endScare(self,task):
+        self.pacman.scareMode = False
+    def toggleScare(self,task):
+        self.gameState.setColor((1,1,0,1))
+        self.taskMgr.doMethodLater(0.2, self.toggleScare2, 'toggleScare')
+    def toggleScare2(self,task):
+        self.gameState.setColor((0,0,1,1))
+        if self.pacman.scareMode:        
+            self.taskMgr.doMethodLater(0.2, self.toggleScare, 'toggleScare')
+
  
  
 app = MyApp()
