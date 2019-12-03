@@ -17,6 +17,7 @@ class Pacman():
         self.model = m
         self.map = map
         self.game = g
+        self.alive = True
     
     def moveForward(self, t):
         move = [-10*t*sin(radians(self.rotation[0])),10*t*cos(radians(self.rotation[0]))]
@@ -81,3 +82,19 @@ class Pacman():
                 self.game.pacman.scareMode = True
                 self.game.taskMgr.doMethodLater(10, self.game.endScare, 'endScare')
                 self.game.taskMgr.doMethodLater(0.2, self.game.toggleScare, 'toggleScare')
+        self.checkGhosts()
+    
+    def checkGhosts(self):
+        pacmanPos = self.model.getPos()
+        for ghost in self.game.ghosts:
+            if (ghost.getPos()[0]- pacmanPos[0])*(ghost.getPos()[0]- pacmanPos[0])+(ghost.getPos()[1]- pacmanPos[1])*(ghost.getPos()[1]- pacmanPos[1])<2.5 :
+                self.alive = False
+                self.rotation[1]=180
+                self.model.setHpr(self.rotation[0],self.rotation[1],self.rotation[2])
+    
+    def reset(self):
+        self.position = [0,6,1.5]
+        self.rotation = [0,0,0]
+        self.model.setPos(self.position[0],self.position[1],self.position[2])
+        self.model.setHpr(self.rotation[0],self.rotation[1],self.rotation[2])
+        self.alive = True

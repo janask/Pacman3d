@@ -11,6 +11,7 @@ from direct.gui.DirectGui import *
 
 from Pacman import Pacman
 from Map import Map
+from Ghost import Ghost
  
 class MyApp(ShowBase):
 
@@ -38,29 +39,31 @@ class MyApp(ShowBase):
         self.accept("aspectRatioChanged", self.ratioChanged)
 
         self.map = Map(self)
-        self.cameraMode=1
+        self.cameraMode=2
+        self.pause = False
 
         #Ghosts
+        self.ghosts = []
         g = loader.loadModel(Filename.fromOsSpecific("models/blinky.bam"))
-        g.setPos(24,6,1.5)
         g.setScale(1.5,1.5,1.5)
         g.reparentTo(self.render)
+        self.ghosts.append(Ghost(g,self.map,self,[0,0,1.5]))
         g = loader.loadModel(Filename.fromOsSpecific("models/pinky.bam"))
-        g.setPos(27,6,1.5)
         g.setScale(1.5,1.5,1.5)
         g.reparentTo(self.render)
+        self.ghosts.append(Ghost(g,self.map,self,[0,-3,1.5]))
         g = loader.loadModel(Filename.fromOsSpecific("models/inky.bam"))
-        g.setPos(30,6,1.5)
         g.setScale(1.5,1.5,1.5)
         g.reparentTo(self.render)
+        self.ghosts.append(Ghost(g,self.map,self,[-9,-3,1.5]))
         g = loader.loadModel(Filename.fromOsSpecific("models/clyde.bam"))
-        g.setPos(33,6,1.5)
         g.setScale(1.5,1.5,1.5)
         g.reparentTo(self.render)
-        g = loader.loadModel(Filename.fromOsSpecific("models/scared.bam"))
-        g.setPos(36,6,1.5)
-        g.setScale(1.5,1.5,1.5)
-        g.reparentTo(self.render)
+        self.ghosts.append(Ghost(g,self.map,self,[-9,-3,1.5]))
+        #g = loader.loadModel(Filename.fromOsSpecific("models/scared.bam"))
+        #g.setPos(36,6,1.5)
+        #g.setScale(1.5,1.5,1.5)
+        #g.reparentTo(self.render)
 
         #Pacman
         m = loader.loadModel(Filename.fromOsSpecific("models/pacman.bam"))
@@ -77,23 +80,30 @@ class MyApp(ShowBase):
         dt = globalClock.getFrameTime()
         dt = dt - self.timer
         self.timer = dt + self.timer
+        
+        if not self.pause:
      
-        if is_down(KeyboardButton.up()):
-            self.pacman.moveForward(dt)
-        if is_down(KeyboardButton.down()):
-            self.pacman.moveBack(dt)
-        if is_down(KeyboardButton.left()):
-            self.pacman.turnLeft(dt)
-        if is_down(KeyboardButton.right()):
-            self.pacman.turnRight(dt)
-        if is_down(KeyboardButton.asciiKey('1')):
-            self.cameraMode= 1
-        if is_down(KeyboardButton.asciiKey('2')):
-            self.cameraMode= 2
-        if is_down(KeyboardButton.asciiKey('3')):
-            self.cameraMode= 3
-
+            if is_down(KeyboardButton.up()):
+                self.pacman.moveForward(dt)
+            if is_down(KeyboardButton.down()):
+                self.pacman.moveBack(dt)
+            if is_down(KeyboardButton.left()):
+                self.pacman.turnLeft(dt)
+            if is_down(KeyboardButton.right()):
+                self.pacman.turnRight(dt)
+            if is_down(KeyboardButton.asciiKey(b"1")):
+                self.cameraMode= 1
+            if is_down(KeyboardButton.asciiKey(b'2')):
+                self.cameraMode= 2
+            if is_down(KeyboardButton.asciiKey(b'3')):
+                self.cameraMode= 3
+            self.pacman.checkGhosts()
+            
+            for g in self.ghosts:
+                g.move(dt)
+        
         self.pointsLabel.setText("Points: "+str(self.points))
+        self.livesLabel.setText("Lives: "+str(self.lives))
         
         if self.cameraMode==1:
             self.camera.setPos(self.pacman.position[0],self.pacman.position[1],self.pacman.position[2])
@@ -109,6 +119,11 @@ class MyApp(ShowBase):
             DirectLabel(frameColor=(0,1,0,1),text="VICTORY", scale=(0.5,0.5,0.5))
             self.pacman.scareMode = False
             return
+        if not self.pacman.alive and not self.pause:
+            self.pacman.scareMode = False
+            self.lives-=1
+            self.pause = True
+            self.taskMgr.doMethodLater(3, self.resetGame, 'resetGame')
         return Task.cont
     def ratioChanged(self):
         if base.getAspectRatio() > 1:
@@ -130,7 +145,14 @@ class MyApp(ShowBase):
         self.gameState.setColor((0,0,1,1))
         if self.pacman.scareMode:        
             self.taskMgr.doMethodLater(0.2, self.toggleScare, 'toggleScare')
-
+    def resetGame(self,task):
+        if self.lives==0:
+            DirectLabel(frameColor=(1,0,0,1),text="GAME OVER", scale=(0.5,0.5,0.5))
+        else:
+            self.pacman.reset()
+            for g in self.ghosts:
+                g.reset()
+            self.pause = False
  
  
 app = MyApp()
