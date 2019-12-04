@@ -11,7 +11,7 @@ from direct.gui.DirectGui import *
 
 from Pacman import Pacman
 from Map import Map
-from Ghost import Ghost
+from Ghost import Ghost, Blinky, Pinky, Inky, Clyde
  
 class MyApp(ShowBase):
 
@@ -41,29 +41,32 @@ class MyApp(ShowBase):
         self.map = Map(self)
         self.cameraMode=2
         self.pause = False
+        self.scareMode = False
+        self.ghostPts = 200
 
         #Ghosts
         self.ghosts = []
         g = loader.loadModel(Filename.fromOsSpecific("models/blinky.bam"))
         g.setScale(1.5,1.5,1.5)
         g.reparentTo(self.render)
-        self.ghosts.append(Ghost(g,self.map,self,[0,0,1.5]))
+        self.ghosts.append(Blinky(g,self.map,self,[0,0,1.5]))
         g = loader.loadModel(Filename.fromOsSpecific("models/pinky.bam"))
         g.setScale(1.5,1.5,1.5)
         g.reparentTo(self.render)
-        self.ghosts.append(Ghost(g,self.map,self,[0,-3,1.5]))
+        self.ghosts.append(Pinky(g,self.map,self,[0,-3,1.5]))
         g = loader.loadModel(Filename.fromOsSpecific("models/inky.bam"))
         g.setScale(1.5,1.5,1.5)
         g.reparentTo(self.render)
-        self.ghosts.append(Ghost(g,self.map,self,[-9,-3,1.5]))
+        self.ghosts.append(Inky(g,self.map,self,[-9,-3,1.5]))
         g = loader.loadModel(Filename.fromOsSpecific("models/clyde.bam"))
         g.setScale(1.5,1.5,1.5)
         g.reparentTo(self.render)
-        self.ghosts.append(Ghost(g,self.map,self,[-9,-3,1.5]))
-        #g = loader.loadModel(Filename.fromOsSpecific("models/scared.bam"))
-        #g.setPos(36,6,1.5)
-        #g.setScale(1.5,1.5,1.5)
-        #g.reparentTo(self.render)
+        self.ghosts.append(Clyde(g,self.map,self,[-9,-3,1.5]))
+        for i in range(len(self.ghosts)):
+            g = loader.loadModel(Filename.fromOsSpecific("models/scared.bam"))
+            g.setScale(1.5,1.5,1.5)
+            g.reparentTo(self.render)
+            self.ghosts[i].setScaredModel(g)
 
         #Pacman
         m = loader.loadModel(Filename.fromOsSpecific("models/pacman.bam"))
@@ -117,10 +120,10 @@ class MyApp(ShowBase):
 
         if len(self.map.coins) + len(self.map.scares) == 0:
             DirectLabel(frameColor=(0,1,0,1),text="VICTORY", scale=(0.5,0.5,0.5))
-            self.pacman.scareMode = False
+            self.scareMode = False
             return
         if not self.pacman.alive and not self.pause:
-            self.pacman.scareMode = False
+            self.scareMode = False
             self.lives-=1
             self.pause = True
             self.taskMgr.doMethodLater(3, self.resetGame, 'resetGame')
@@ -137,13 +140,22 @@ class MyApp(ShowBase):
             self.levelLabel = DirectLabel(frameColor=(0,0,0,0),text="LEVEL "+str(self.level), scale=(0.1,0.1,0.1), pos=(0,0,0.9))
             self.livesLabel = DirectLabel(frameColor=(0,0,0,0),text="Lives: "+str(self.lives), scale=(0.1,0.1,0.1), pos=(0.8,0,0.9))
     def endScare(self,task):
-        self.pacman.scareMode = False
+        self.scareMode = False
+        self.ghostPts = 200
+        for g in self.ghosts:
+            g.unscare()
+    def startScare(self):
+        self.scareMode = True
+        for g in self.ghosts:
+            g.scare()
+        self.taskMgr.doMethodLater(10, self.endScare, 'endScare')
+        self.taskMgr.doMethodLater(0.2, self.toggleScare, 'toggleScare')
     def toggleScare(self,task):
         self.gameState.setColor((1,1,0,1))
         self.taskMgr.doMethodLater(0.2, self.toggleScare2, 'toggleScare')
     def toggleScare2(self,task):
         self.gameState.setColor((0,0,1,1))
-        if self.pacman.scareMode:        
+        if self.scareMode:        
             self.taskMgr.doMethodLater(0.2, self.toggleScare, 'toggleScare')
     def resetGame(self,task):
         if self.lives==0:

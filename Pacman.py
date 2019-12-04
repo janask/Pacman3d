@@ -10,7 +10,7 @@ from panda3d.core import Filename
 from direct.gui.DirectGui import *
 
 class Pacman():
-    position = [0,6,1.5]
+    position = [0,-15,1.5]
     rotation = [0,0,0]
     
     def __init__(self, m, map, g):
@@ -79,21 +79,27 @@ class Pacman():
                 scare.removeNode()
                 self.map.scares.remove(scare)
                 self.game.points += 10
-                self.game.pacman.scareMode = True
-                self.game.taskMgr.doMethodLater(10, self.game.endScare, 'endScare')
-                self.game.taskMgr.doMethodLater(0.2, self.game.toggleScare, 'toggleScare')
+                self.game.startScare()
         self.checkGhosts()
     
     def checkGhosts(self):
         pacmanPos = self.model.getPos()
         for ghost in self.game.ghosts:
             if (ghost.getPos()[0]- pacmanPos[0])*(ghost.getPos()[0]- pacmanPos[0])+(ghost.getPos()[1]- pacmanPos[1])*(ghost.getPos()[1]- pacmanPos[1])<2.5 :
-                self.alive = False
-                self.rotation[1]=180
-                self.model.setHpr(self.rotation[0],self.rotation[1],self.rotation[2])
+                if self.game.scareMode and ghost.alive:
+                    ghost.eaten()
+                    self.game.points += self.game.ghostPts
+                    self.game.ghostPts*=2
+                elif ghost.alive:
+                    self.alive = False
+                    self.rotation[1]=180
+                    self.model.setHpr(self.rotation[0],self.rotation[1],self.rotation[2])
+    
+    def getPos(self):
+        return self.model.getPos()
     
     def reset(self):
-        self.position = [0,6,1.5]
+        self.position = [0,-15,1.5]
         self.rotation = [0,0,0]
         self.model.setPos(self.position[0],self.position[1],self.position[2])
         self.model.setHpr(self.rotation[0],self.rotation[1],self.rotation[2])
