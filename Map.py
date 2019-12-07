@@ -13,6 +13,22 @@ class Map():
 
     def __init__(self, g):
         self.game = g
+        self.load()
+
+    def addFruit(self):
+        if self.game.points%self.bonus == 0:
+            m = loader.loadModel(Filename.fromOsSpecific("models/fruit.bam"))
+            m.setPos(0,-9,1)
+            m.setScale(3,3,3)
+            m.reparentTo(self.game.render)
+            self.fruits.append(m)
+            self.game.taskMgr.doMethodLater(10, self.clearFruits, 'clearFruits')
+    def clearFruits(self, task):
+        for f in self.fruits:
+            f.removeNode()
+        self.fruits.clear()
+        
+    def load(self):
         x=-45
         y=-45
         self.walls = []
@@ -54,15 +70,12 @@ class Map():
                 x = -45
                 y += 3
             self.bonus = int(len(self.coins)/3)
-    def addFruit(self):
-        if self.game.points%self.bonus == 0:
-            m = loader.loadModel(Filename.fromOsSpecific("models/fruit.bam"))
-            m.setPos(-6,6,1)
-            m.setScale(3,3,3)
-            m.reparentTo(self.game.render)
-            self.fruits.append(m)
-            self.game.taskMgr.doMethodLater(10, self.clearFruits, 'clearFruits')
-    def clearFruits(self, task):
-        for f in self.fruits:
-            f.removeNode()
-        self.fruits.clear()
+    def reload(self,task):
+        for coin in self.coins:
+            coin.removeNode()
+        for fruit in self.fruits:
+            fruit.removeNode()
+        for scare in self.scares:
+            scare.removeNode()
+        self.load()
+    

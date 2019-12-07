@@ -10,7 +10,7 @@ from panda3d.core import Filename
 from direct.gui.DirectGui import *
 
 class Pacman():
-    position = [0,-15,1.5]
+    position = [0,21,1.5]
     rotation = [0,0,0]
     
     def __init__(self, m, map, g):
@@ -99,7 +99,7 @@ class Pacman():
         return self.model.getPos()
     
     def reset(self):
-        self.position = [0,-15,1.5]
+        self.position = [0,21,1.5]
         self.rotation = [0,0,0]
         self.model.setPos(self.position[0],self.position[1],self.position[2])
         self.model.setHpr(self.rotation[0],self.rotation[1],self.rotation[2])

@@ -49,19 +49,19 @@ class MyApp(ShowBase):
         g = loader.loadModel(Filename.fromOsSpecific("models/blinky.bam"))
         g.setScale(1.5,1.5,1.5)
         g.reparentTo(self.render)
-        self.ghosts.append(Blinky(g,self.map,self,[0,0,1.5]))
+        self.ghosts.append(Blinky(g,self.map,self,[-3,-3,1.5]))
         g = loader.loadModel(Filename.fromOsSpecific("models/pinky.bam"))
         g.setScale(1.5,1.5,1.5)
         g.reparentTo(self.render)
-        self.ghosts.append(Pinky(g,self.map,self,[0,-3,1.5]))
+        self.ghosts.append(Pinky(g,self.map,self,[-3,3,1.5]))
         g = loader.loadModel(Filename.fromOsSpecific("models/inky.bam"))
         g.setScale(1.5,1.5,1.5)
         g.reparentTo(self.render)
-        self.ghosts.append(Inky(g,self.map,self,[-9,-3,1.5]))
+        self.ghosts.append(Inky(g,self.map,self,[3,3,1.5]))
         g = loader.loadModel(Filename.fromOsSpecific("models/clyde.bam"))
         g.setScale(1.5,1.5,1.5)
         g.reparentTo(self.render)
-        self.ghosts.append(Clyde(g,self.map,self,[-9,-3,1.5]))
+        self.ghosts.append(Clyde(g,self.map,self,[3,-3,1.5]))
         for i in range(len(self.ghosts)):
             g = loader.loadModel(Filename.fromOsSpecific("models/scared.bam"))
             g.setScale(1.5,1.5,1.5)
@@ -84,6 +84,11 @@ class MyApp(ShowBase):
         dt = dt - self.timer
         self.timer = dt + self.timer
         
+        if is_down(KeyboardButton.asciiKey(b'p')) and not self.pause:
+            self.pause = not self.pause
+        if is_down(KeyboardButton.asciiKey(b'r')) and self.pause:
+            self.pause = not self.pause
+        
         if not self.pause:
      
             if is_down(KeyboardButton.up()):
@@ -105,6 +110,7 @@ class MyApp(ShowBase):
             for g in self.ghosts:
                 g.move(dt)
         
+        self.levelLabel.setText("LEVEL "+str(self.level))
         self.pointsLabel.setText("Points: "+str(self.points))
         self.livesLabel.setText("Lives: "+str(self.lives))
         
@@ -115,12 +121,20 @@ class MyApp(ShowBase):
             self.camera.setPos(self.pacman.position[0],self.pacman.position[1]-30,self.pacman.position[2]+45)
             self.camera.setHpr(0,-60,0)
         elif self.cameraMode==3:
-            self.camera.setPos(0,0,180)
+            self.camera.setPos(0,5,200)
             self.camera.setHpr(0,-90,0)
 
-        if len(self.map.coins) + len(self.map.scares) == 0:
-            DirectLabel(frameColor=(0,1,0,1),text="VICTORY", scale=(0.5,0.5,0.5))
+        if len(self.map.coins) + len(self.map.scares) < 300 and not self.pause:
             self.scareMode = False
+            self.pause = True
+            if self.level<255:
+                self.centeredLabel = DirectLabel(frameColor=(0,1,0,1),text="NEXT LEVEL", scale=(0.5,0.5,0.5))
+                self.level+=1
+                self.taskMgr.doMethodLater(3, self.resetGame, 'resetGame')
+                self.taskMgr.doMethodLater(1, self.map.reload, 'reloadMap')
+                return Task.cont
+            else:
+                DirectLabel(frameColor=(0,1,0,1),text="VICTORY", scale=(0.5,0.5,0.5))
             return
         if not self.pacman.alive and not self.pause:
             self.scareMode = False
@@ -161,6 +175,8 @@ class MyApp(ShowBase):
         if self.lives==0:
             DirectLabel(frameColor=(1,0,0,1),text="GAME OVER", scale=(0.5,0.5,0.5))
         else:
+            if self.centeredLabel:
+                self.centeredLabel.hide()
             self.pacman.reset()
             for g in self.ghosts:
                 g.reset()

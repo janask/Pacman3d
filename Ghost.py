@@ -23,18 +23,16 @@ class Ghost():
     def move(self,t):
         if(self.velocity[0]!=0 and self.position[0] != round(self.position[0]) and floor(self.position[0]/3)!=floor(self.position[0]/3+8*self.velocity[0]*t/3)):
             self.position[0] = round(self.position[0])
-            if not self.goodDirection():
-                self.turn()
         else:
             self.position[0] += 8*self.velocity[0]*t
         if(self.velocity[1]!=0 and self.position[1] != round(self.position[1]) and floor(self.position[1]/3)!=floor(self.position[1]/3+8*self.velocity[1]*t/3)):
             self.position[1] = round(self.position[1])
-            if not self.goodDirection():
-                self.turn()
         else:
             self.position[1] += 8*self.velocity[1]*t
         if(self.isCrossing(t) or self.velocity[0]==self.velocity[1]):
             self.setDirection()
+        elif not self.goodDirection():
+            self.turn()
         self.model.setPos(self.position[0],self.position[1],self.position[2])
         self.model.setHpr(self.rotation[0],self.rotation[1],self.rotation[2])
         
@@ -69,11 +67,15 @@ class Ghost():
     
     def runAway(self):
         pacmanDir = [self.position[0]-self.game.pacman.getPos()[0],self.position[1]-self.game.pacman.getPos()[1]]
-        for dir in self.directionsSorted(pacmanDir):
-            self.velocity[0] = dir[0]
-            self.velocity[1] = dir[1]
-            if self.goodDirection():
-                break
+        if(floor(self.position[1]/3)==self.position[1]/3 and floor(self.position[0]/3)==self.position[0]/3):
+            for dir in self.directionsSorted(pacmanDir):
+                self.velocity[0] = dir[0]
+                self.velocity[1] = dir[1]
+                if self.goodDirection():
+                    break
+        elif (self.velocity[0]!=0 and pacmanDir[0]/self.velocity[0]<0) or (self.velocity[1]!=0 and pacmanDir[1]/self.velocity[1]<0):
+            self.velocity[0] = -self.velocity[0]
+            self.velocity[1] = -self.velocity[1]
         
     def goodDirection(self):
         for wall in self.map.walls:
@@ -97,6 +99,7 @@ class Ghost():
         if self.alive:
             self.scared = True
             self.model.hide()
+            self.setDirection()
             self.model = self.scaredModel
             self.model.setPos(self.position[0],self.position[1],self.position[2])
             self.model.setHpr(self.rotation[0],self.rotation[1],self.rotation[2])
