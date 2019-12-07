@@ -43,6 +43,7 @@ class MyApp(ShowBase):
         self.pause = False
         self.scareMode = False
         self.ghostPts = 200
+        self.centeredLabel = None
 
         #Ghosts
         self.ghosts = []
@@ -175,8 +176,9 @@ class MyApp(ShowBase):
         if self.lives==0:
             DirectLabel(frameColor=(1,0,0,1),text="GAME OVER", scale=(0.5,0.5,0.5))
         else:
-            if self.centeredLabel:
+            if self.centeredLabel != None:
                 self.centeredLabel.hide()
+                self.centeredLabel = None
             self.pacman.reset()
             for g in self.ghosts:
                 g.reset()
