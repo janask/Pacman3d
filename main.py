@@ -124,7 +124,7 @@ class MyApp(ShowBase):
             self.camera.setPos(0,5,200)
             self.camera.setHpr(0,-90,0)
 
-        if len(self.map.coins) + len(self.map.scares) < 300 and not self.pause:
+        if len(self.map.coins) + len(self.map.scares) == 0 and not self.pause:
             self.scareMode = False
             self.pause = True
             if self.level<255:
